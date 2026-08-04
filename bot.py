@@ -106,14 +106,12 @@ async def exchange_final_gateway(message: types.Message):
     )
 
 if __name__ == '__main__':
-    # Render sunucusunun kapanmasını engelleyen özel web port ayarı eklendi
+    # Render sunucusunun port hatası vermesini kesin engelleyen özel parça
     from aiohttp import web
-    async def dummy_handler(request): return web.Response(text="Bot is Alive!")
+    async def dummy_handler(request): return web.Response(text="Alive")
     app = web.Application()
     app.router.add_get('/', dummy_handler)
-    
     loop = asyncio.get_event_loop()
     loop.create_task(dp.start_polling(reset_webhook=True))
-    
     port = int(os.environ.get("PORT", 10000))
     web.run_app(app, host='0.0.0.0', port=port)
