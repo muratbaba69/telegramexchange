@@ -3,31 +3,26 @@ import asyncio
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-# 1. SİSTEM LOGLARI VE BAŞLATICILAR
 logging.basicConfig(level=logging.INFO)
 
-# 🔑 SENİN RESMİ TELEGRAM BOT TOKENİN (KODA ENTEGRE EDİLDİ)
+# TELEGRAM BOT TOKENİNİZ
 API_TOKEN = '8857214628:AAG1ZwgJXMApUC9DeaJhNKiyQ6IT0OfXipo'
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# 📊 STRATEJİK HESAPLAMA VE KURAL MOTORU
-MIN_LIMIT_USD = 50.0       # Belirlediğin kesin minimum limit
-BASE_RATE = 95.50          # 1 USDT Ham kur fiyatı (API'den otomatik güncellenecek)
-MY_COMMISSION_PERCENT = 0.025  # %2.5 Sizin net kazancınız
-
-# Kullanıcının göreceği kur (%2.5 komisyonunuz düşülerek hesaplanır)
+# STRATEJİK HESAPLAMA VE KURAL MOTORU
+MIN_LIMIT_USD = 50.0
+BASE_RATE = 95.50          
+MY_COMMISSION_PERCENT = 0.025  
 CURRENT_RATE = BASE_RATE * (1 - MY_COMMISSION_PERCENT)
 
-# 2. ANA MENÜ BUTONLARI (KULLANICI BOTA GİRDİĞİNDE GÖRÜNÜR)
 def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(KeyboardButton("🔄 Обменять USDT на Рубли (No-KYC)"), KeyboardButton("📱 Оплата по QR-коду (СБП)"))
     markup.row(KeyboardButton("📊 Актуальный курс"), KeyboardButton("👤 Мой профиль & Кошелек"))
     return markup
 
-# 3. /START KOMUTU (KARŞILAMA VE GÜVENLİK BİLGİSİ)
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     await message.reply(
@@ -40,7 +35,6 @@ async def cmd_start(message: types.Message):
         parse_mode="Markdown"
     )
 
-# 4. ADIM 1: KRİPTO SATIŞ BUTONUNA TIKLANDIĞINDA
 @dp.message_handler(lambda message: message.text == "🔄 Обменять USDT на Рубли (No-KYC)")
 async def exchange_crypto_start(message: types.Message):
     await message.reply(
@@ -49,7 +43,6 @@ async def exchange_crypto_start(message: types.Message):
         parse_mode="Markdown"
     )
 
-# ADIM 2: MİKTAR GİRİLDİĞİNDE MİNİMUM 50$ LİMİT KONTROLÜ
 @dp.message_handler(lambda message: message.text.replace('.', '', 1).isdigit())
 async def exchange_crypto_amount(message: types.Message):
     amount = float(message.text)
@@ -64,7 +57,6 @@ async def exchange_crypto_amount(message: types.Message):
     else:
         ruble_amount = amount * CURRENT_RATE
         
-        # BİTPAPA TARZI BANKA SEÇİM MENÜSÜ
         bank_menu = InlineKeyboardMarkup(row_width=2)
         bank_menu.add(
             InlineKeyboardButton("🟢 Сбербанк (Sberbank)", callback_data=f"b_SBER_{amount}"),
@@ -75,12 +67,12 @@ async def exchange_crypto_amount(message: types.Message):
         await message.reply(
             f"✅ **Сумма одобрена!**\n\n"
             f"💰 Вы отдаете: **{amount} USDT**\n"
-            f"🇷🇺 Вы получаете: **{ruble_amount:,.2f} RUB** _(Включая комиссию)_{f'\n\n👉 **Выберите банк для получения рублей:**'}",
+            f"🇷🇺 Вы получите: **{ruble_amount:,.2f} RUB** _(Включая комиссию)_\n\n"
+            f"👉 **Выберите банк для получения рублей:**",
             reply_markup=bank_menu,
             parse_mode="Markdown"
         )
 
-# ADIM 3: BANKA SEÇİLDİKTEN SONRA KART VEYA SBP BİLGİSİ TALEBİ
 @dp.callback_query_handler(lambda c: c.data.startswith('b_'))
 async def status_select_bank(callback_query: types.CallbackQuery):
     _, bank, amount = callback_query.data.split("_")
@@ -90,17 +82,15 @@ async def status_select_bank(callback_query: types.CallbackQuery):
         text=f"🏦 Выбранный банк: **{bank}**\n"
              f"💰 Сумма сделки: **{amount} USDT**\n\n"
              f"✍️ Пожалуйста, отправьте номер вашей карты или номер телефона для СБП:\n"
-             f"_(Сюda автоматический шлюз зачислит рубли)_",
+             f"_(Сюда автоматический шлюз зачислит рубли)_",
         parse_mode="Markdown"
     )
 
-# ADIM 4: KART BİLGİSİ GELDİĞİNDE KURUMSAL AUTOMATIC API BAĞLANTISI
 @dp.message_handler(lambda message: len(message.text) >= 10 and not message.text.startswith("/"))
 async def exchange_final_gateway(message: types.Message):
     await message.reply("🔄 **Связываюсь с автоматическим многовалютным шлюзом...**")
-    await asyncio.sleep(2)  # Kurumsal API (Volet/Payeer) sorgu simülasyonu
+    await asyncio.sleep(2)  
     
-    # Kurumsal ağın bota verdiği otomatik emanet (Escrow) cüzdanı
     gateway_deposit_wallet = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
     
     await message.reply(
