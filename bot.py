@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
@@ -93,7 +92,6 @@ async def status_select_bank(callback_query: types.CallbackQuery):
 @dp.message_handler(lambda message: len(message.text) >= 10 and not message.text.startswith("/"))
 async def exchange_final_gateway(message: types.Message):
     await message.reply("🔄 **Связываюсь с автоматическим многовалютным шлюзом...**")
-    await asyncio.sleep(2)  
     
     gateway_deposit_wallet = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
     
@@ -106,12 +104,5 @@ async def exchange_final_gateway(message: types.Message):
     )
 
 if __name__ == '__main__':
-    # Render sunucusunun port hatası vermesini kesin engelleyen özel parça
-    from aiohttp import web
-    async def dummy_handler(request): return web.Response(text="Alive")
-    app = web.Application()
-    app.router.add_get('/', dummy_handler)
-    loop = asyncio.get_event_loop()
-    loop.create_task(dp.start_polling(reset_webhook=True))
-    port = int(os.environ.get("PORT", 10000))
-    web.run_app(app, host='0.0.0.0', port=port)
+    # Hataya sebep olan karmaşık web yapısı yerine en stabil standart başlatıcıyı entegre ettim
+    executor.start_polling(dp, skip_updates=True)
