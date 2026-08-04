@@ -1,3 +1,4 @@
+import os
 import logging
 import asyncio
 from aiogram import Bot, Dispatcher, executor, types
@@ -75,7 +76,9 @@ async def exchange_crypto_amount(message: types.Message):
 
 @dp.callback_query_handler(lambda c: c.data.startswith('b_'))
 async def status_select_bank(callback_query: types.CallbackQuery):
-    _, bank, amount = callback_query.data.split("_")
+    data_parts = callback_query.data.split("_")
+    bank = data_parts[1]
+    amount = data_parts[2]
     
     await bot.send_message(
         chat_id=callback_query.message.chat.id,
@@ -85,6 +88,7 @@ async def status_select_bank(callback_query: types.CallbackQuery):
              f"_(Сюда автоматический шлюз зачислит рубли)_",
         parse_mode="Markdown"
     )
+    await callback_query.answer()
 
 @dp.message_handler(lambda message: len(message.text) >= 10 and not message.text.startswith("/"))
 async def exchange_final_gateway(message: types.Message):
@@ -102,4 +106,14 @@ async def exchange_final_gateway(message: types.Message):
     )
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    # Render sunucusunun kapanmasını engelleyen özel web port ayarı eklendi
+    from aiohttp import web
+    async def dummy_handler(request): return web.Response(text="Bot is Alive!")
+    app = web.Application()
+    app.router.add_get('/', dummy_handler)
+    
+    loop = asyncio.get_event_loop()
+    loop.create_task(dp.start_polling(reset_webhook=True))
+    
+    port = int(os.environ.get("PORT", 10000))
+    web.run_app(app, host='0.0.0.0', port=port)
